@@ -9,6 +9,6 @@ import ArgumentParser
 @main
 struct srvemu: ParsableCommand {
     mutating func run() throws {
-        print("Hello, world!")
+        print("RISC-V Swift")
     }
 }
