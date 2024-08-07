@@ -20,7 +20,7 @@ public enum MachineValue {
     }
 
     /// `Add` operation with overflow
-    static func +(lhs: Self, rhs: Self) -> Self {
+    static func + (lhs: Self, rhs: Self) -> Self {
         switch (lhs, rhs) {
         case let (.x32(leftValue), .x32(rightValue)):
             .x32(leftValue &+ rightValue)
@@ -32,7 +32,7 @@ public enum MachineValue {
     }
 
     /// `Sub` operation with overflow
-    static func -(lhs: Self, rhs: Self) -> Self {
+    static func - (lhs: Self, rhs: Self) -> Self {
         switch (lhs, rhs) {
         case let (.x32(leftValue), .x32(rightValue)):
             .x32(leftValue &- rightValue)
@@ -44,7 +44,7 @@ public enum MachineValue {
     }
 
     /// `Add` operation with `Int` value  with overflow
-    static func +(lhs: Self, rhs: Int) -> Self {
+    static func + (lhs: Self, rhs: Int) -> Self {
         switch lhs {
         case let .x32(leftValue):
             .x32(leftValue &+ UInt32(rhs))
@@ -54,7 +54,7 @@ public enum MachineValue {
     }
 
     /// `Sub` operation with `Int` value  with overflow
-    static func -(lhs: Self, rhs: Int) -> Self {
+    static func - (lhs: Self, rhs: Int) -> Self {
         switch lhs {
         case let .x32(leftValue):
             .x32(leftValue &- UInt32(rhs))
@@ -68,9 +68,9 @@ public enum MachineValue {
 extension Int {
     init(_ value: MachineValue) {
         switch value {
-        case .x32(let v):
+        case let .x32(v):
             self = Int(v)
-        case .x64(let v):
+        case let .x64(v):
             self = Int(v)
         }
     }
@@ -127,17 +127,27 @@ struct MachineState {
     /// Registers
     var regs: Registers
     /// Program counter
-    var pc: UInt64
+    var pc: MachineValue
     /// Machine bus
     var bus: Bus
     /// Machine bit architecture
     var arch: MachineArch
 
-    init(arch: MachineArch, pc: UInt64, rom: Bus) {
+    /// Init Machine State
+    init(arch: MachineArch, pc: MachineValue, bus: Bus) {
         self.regs = Registers(at: arch)
         self.pc = pc
-        // TODO: init devices
-        self.bus = rom
+        self.bus = bus
         self.arch = arch
+    }
+
+    /// Run execution for with Machine State
+    func run() {
+        /*
+         1. fetchInstruction by PC
+           - Load 4 bytes - return Instruction
+         2. Decode
+           - return ISA struct (InstrucitonI for ex.)
+         */
     }
 }
