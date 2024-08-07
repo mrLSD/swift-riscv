@@ -90,9 +90,9 @@ extension BusDevice {
     /// Write double word (u64) to the memory
     func writeDoubleWord(from address: MachineValue, data: MachineValue) -> Result<Void, BusDeviceErrors> {
         switch address {
-        case .x32(let value):
+        case .x32:
             .failure(.memoryWriteX64forX32)
-        case .x64(let value):
+        case .x64:
             writeData(to: address, data: data, index: 8)
         }
     }
