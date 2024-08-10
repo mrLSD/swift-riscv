@@ -133,6 +133,13 @@ struct MachineState {
     /// Machine bit architecture
     var arch: MachineArch
 
+    /// Exception errors
+    enum Exception: Error {
+        case instructionAddressMisaligned
+        case instructionAccessFault(BusDeviceErrors)
+        case illegalInstruction(MachineValue)
+    }
+
     /// Init Machine State
     init(arch: MachineArch, pc: MachineValue, bus: Bus) {
         self.regs = Registers(at: arch)
@@ -141,13 +148,28 @@ struct MachineState {
         self.arch = arch
     }
 
+    /// Fetch instruction
+    func fetch() -> Result<MachineValue, Exception> {
+        self.bus.readWord(from: self.pc).mapError { .instructionAccessFault($0) }
+    }
+
     /// Run execution for with Machine State
-    func run() {
-        /*
-         1. fetchInstruction by PC
-           - Load 4 bytes - return Instruction
-         2. Decode
-           - return ISA struct (InstrucitonI for ex.)
-         */
+    func run() -> Result<Void, Exception> {
+        while true {
+            // Fetch instcruction
+            let instr: MachineValue
+            switch self.fetch() {
+            case let .success(instruction): instr = instruction
+            case let .failure(err): return .failure(err)
+            }
+
+            // Decode instraction set
+            guard let instructionSet = Decoder.decode(instr: instr) else {
+                return .failure(.illegalInstruction(instr))
+            }
+
+            // Execute instraction
+            instructionSet.execute()
+        }
     }
 }
