@@ -71,18 +71,8 @@ enum InstructionI: DecodeInstruction {
         // [31:25]
         let funct7 = (instr & 0xFE00_0000) >> 25
 
-//        `OPCODE_JALR:   // I-type immediate
-//            immediate = { {21{inst[31]}}, inst[30:25], inst[24:20] };
-//        `OPCODE_STORE_FP,
 //        `OPCODE_STORE:  // S-type immediate
 //            immediate = { {21{inst[31]}}, inst[30:25], inst[11:7] };
-//        `OPCODE_BRANCH: // B-type immediate
-//            immediate = { {20{inst[31]}}, inst[7], inst[30:25], inst[11:8], 1'b0 };
-//        `OPCODE_AUIPC,
-//        `OPCODE_LUI:    // U-type immediate
-//            immediate = { {1{inst[31]}}, inst[30:20], inst[19:12], 12'b0 };
-//        `OPCODE_JAL:    // J-type immediate
-//            immediate = { {12{inst[31]}}, inst[19:12], inst[20], inst[30:25], inst[24:21], 1'b0 };
 
         // I-type immediate
         // [31:20], sign extended
