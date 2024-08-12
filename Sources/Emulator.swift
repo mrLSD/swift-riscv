@@ -27,7 +27,7 @@ struct Emulator: ParsableCommand {
     }
 
     mutating func run() throws {
-        print(String(0b1111, radix: 16))
+        // print(String(0b1111, radix: 16))
         print("RISC-V Swift")
         let arch: MachineArch = .x64
         // PC starts from ROM address
