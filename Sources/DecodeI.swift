@@ -51,6 +51,10 @@ enum InstructionI: DecodeInstruction {
     case ecall
     case ebreak
 
+    enum State {
+        public static let machineState: MachineState? = nil
+    }
+
     /// Decode instruction fir [31:0] bits
     static func decode(instr: MachineValue) -> ExecuteInstruction? {
         // Get instruction for 32-bit arch
@@ -73,17 +77,17 @@ enum InstructionI: DecodeInstruction {
 
         // I-type immediate
         // [31:20], sign extended
-        let imm12_i = signExtend(instr >> 20, 20)
+        let imm12_i = UInt32(bitPattern: Int32(bitPattern: instr) >> 20)
 
         // U-type immediate
-        // [31:12] << 12, sign extend
-        let imm20_u = signExtend(instr & 0xFFFF_F000, 0)
+        // [31:12] << 12, sign extend (as 31-bit is set, it's already has sign bit)
+        let imm20_u = instr & 0xFFFFF000
 
         // J-type immediate
         // [31, 19:12, 20, 30:21, 0b0], sign extended -
         let imm20_j =
             // [31] -> [20] (& 0b1_0000_0000_0000_0000_0000)
-            signExtend((instr >> 11) & 0x10_0000, 11) |
+            UInt32(bitPattern: Int32(bitPattern: instr & 0x80000000) >> 11) |
             // [19:12] -> [19:12] (& 0b1111_1111_0000_0000_0000)
             (instr & 0xFF000) |
             // [20] -> [11] (& 1000_0000_0000)
@@ -95,7 +99,7 @@ enum InstructionI: DecodeInstruction {
         // [31, 7, 30:25, 11:8, 0b0], sign extended
         let imm12_b =
             // [31] -> [12] (& 0b1_0000_0000_0000)
-            signExtend((instr >> 19) & 0x1000, 19) |
+            UInt32(bitPattern: Int32(bitPattern: instr & 0x80000000) >> 19) |
             // [7] -> [11] (& 0b1000_0000_0000)
             ((instr << 4) & 0x800) |
             // [30:25] -> [10:5] (& 0b111_1110_0000)
@@ -107,7 +111,7 @@ enum InstructionI: DecodeInstruction {
         // [31:25, 11:7], sign extended
         let imm12_s =
             // [31:25] -> [11:5] (& 0b1111_1110_0000)
-            signExtend((instr >> 20) & 0xFE0, 20) |
+            UInt32(bitPattern: Int32(bitPattern: instr & 0xFE000000) >> 20) |
             // [11:7] -> [4:0] (& 0b1_1111)
             ((instr >> 7) & 0x1F)
 
@@ -181,15 +185,21 @@ enum InstructionI: DecodeInstruction {
             case 0b111 where funct7 == 0b0000000: .and(rd: rd, rs1: rs1, rs2: rs2)
             default: nil
             }
-        // FENCE
-        case 0b0001111 where rs1 == 0 && rd == 0 && funct3 == 0b000: .and(rd: rd, rs1: rs1, rs2: rs2)
-        // [31:28]
-        // let fm = (instr >> 28) & 0x7
-        // [27:24]
-        // let pred = (instr >> 24) & 0x7
-        // [23:20]
-        // let succ = (instr >> 28) & 0x7
-        //    .fence(pred: pred, succ: succ, fm: fm)
+        // FENCE opcode
+        case 0b0001111 where rd == 0 && rs1 == 0 && funct3 == 0b000: {
+                // [31: 28]
+                let fm = (instr >> 28) & 0x7
+                // [27: 24]
+                let pred = (instr >> 24) & 0x7
+                // [23: 20]
+                let succ = (instr >> 28) & 0x7
+                return .fence(pred: pred, succ: succ, fm: fm)
+            }()
+        // System opcodes
+        case 0b1110011 where rd == 0 && rs1 == 0 && funct3 == 0b000 && imm12_i == 0b000000000000:
+            .ecall
+        case 0b1110011 where rd == 0 && rs1 == 0 && funct3 == 0b000 && imm12_i == 0b000000000001:
+            .ebreak
         default: nil
         }
         return decoded

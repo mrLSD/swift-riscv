@@ -156,7 +156,7 @@ class RAM: BusDevice {
 }
 
 /// Main bus
-/// Each device haa own address space
+/// Each device has own address space
 class Bus {
     private var devices: [BusDevice] = []
 

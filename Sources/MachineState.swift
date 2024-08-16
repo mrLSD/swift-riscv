@@ -148,28 +148,48 @@ struct MachineState {
         self.arch = arch
     }
 
+    func getRegister(_ reg: Register) -> MachineValue {
+        self.regs.getRegister(at: reg)
+    }
+
+    mutating func setRegister(_ reg: Register, _ val: MachineValue) {
+        self.regs.setRegister(at: reg, with: val)
+    }
+
+    mutating func setRegister(_ reg: Register, _ val: UInt32) {
+        let rawValue = switch self.arch {
+        case .x32: MachineValue(from: val)
+        case .x64: MachineValue(from: UInt64(val))
+        }
+        self.regs.setRegister(at: reg, with: rawValue)
+    }
+
+    mutating func incPC() {
+        self.pc = self.pc + 4
+    }
+
     /// Fetch instruction
     func fetch() -> Result<MachineValue, Exception> {
         self.bus.readWord(from: self.pc).mapError { .instructionAccessFault($0) }
     }
 
     /// Run execution for with Machine State
-    func run() -> Result<Void, Exception> {
+    mutating func run() -> Result<Void, Exception> {
         while true {
-            // Fetch instcruction
+            // Fetch instruction
             let instr: MachineValue
             switch self.fetch() {
             case let .success(instruction): instr = instruction
             case let .failure(err): return .failure(err)
             }
 
-            // Decode instraction set
+            // Decode instruction set
             guard let instructionSet = Decoder.decode(instr: instr) else {
                 return .failure(.illegalInstruction(instr))
             }
 
             // Execute instraction
-            instructionSet.execute()
+            instructionSet.execute(state: &self)
         }
     }
 }

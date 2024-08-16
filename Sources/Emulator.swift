@@ -33,7 +33,7 @@ struct Emulator: ParsableCommand {
         // PC starts from ROM address
         let pc = MachineValue(from: UInt64(EmulatorBus.romAddress))
         let bus = EmulatorBus.initBus()
-        let ms = MachineState(arch: arch, pc: pc, bus: bus)
+        var ms = MachineState(arch: arch, pc: pc, bus: bus)
         let result = ms.run()
         print("Result state: \(result)")
     }
