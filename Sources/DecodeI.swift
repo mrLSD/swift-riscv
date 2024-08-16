@@ -58,21 +58,18 @@ enum InstructionI: DecodeInstruction {
             return nil
         }
         // [6:0]
-        let opcode = instr & 0x0000_007F
+        let opcode = instr & 0x7F
         // [11:7]
-        let rd = (instr & 0x0000_0F80) >> 7
+        let rd = (instr >> 7) & 0x1F
         // [19:15]
-        let rs1 = (instr & 0x000F_8000) >> 15
+        let rs1 = (instr >> 15) & 0x1F
         // [24:20]
-        let rs2 = (instr & 0x01F0_0000) >> 20
+        let rs2 = (instr >> 20) & 0x1F
 
         // [14:12]
-        let funct3 = (instr & 0x0000_7000) >> 12
+        let funct3 = (instr >> 12) & 0x7
         // [31:25]
-        let funct7 = (instr & 0xFE00_0000) >> 25
-
-//        `OPCODE_STORE:  // S-type immediate
-//            immediate = { {21{inst[31]}}, inst[30:25], inst[11:7] };
+        let funct7 = (instr >> 25) & 0x7F
 
         // I-type immediate
         // [31:20], sign extended
@@ -83,28 +80,40 @@ enum InstructionI: DecodeInstruction {
         let imm20_u = signExtend(instr & 0xFFFF_F000, 0)
 
         // J-type immediate
-        // [31, 19:12, 20, 30:21], sign extended
+        // [31, 19:12, 20, 30:21, 0b0], sign extended -
         let imm20_j =
-            // [31] -> [20]
-            signExtend((instr & 0x8000_0000) >> 11, 11) |
-            // [19:12] -> [19:12]
+            // [31] -> [20] (& 0b1_0000_0000_0000_0000_0000)
+            signExtend((instr >> 11) & 0x10_0000, 11) |
+            // [19:12] -> [19:12] (& 0b1111_1111_0000_0000_0000)
             (instr & 0xFF000) |
-            // [20] -> [11]
+            // [20] -> [11] (& 1000_0000_0000)
             ((instr >> 9) & 0x800) |
-            // [30:21] -> [10:1]
+            // [30:21] -> [10:1] (& 0b111_1111_1110)
             ((instr >> 20) & 0x7FE)
 
         // B-type immediate
-        // [31, 7, 30:25, 11:8], sign extended
+        // [31, 7, 30:25, 11:8, 0b0], sign extended
         let imm12_b =
-            // [31] -> [12]
-            signExtend((instr & 0x8000_0000) >> 19, 19) |
-            // [7] -> [11]
-            ((instr & 0x80) << 4) |
-            // [30:25] -> [10:5]
+            // [31] -> [12] (& 0b1_0000_0000_0000)
+            signExtend((instr >> 19) & 0x1000, 19) |
+            // [7] -> [11] (& 0b1000_0000_0000)
+            ((instr << 4) & 0x800) |
+            // [30:25] -> [10:5] (& 0b111_1110_0000)
             ((instr >> 20) & 0x7E0) |
-            // [11:8] -> [4:1]
+            // [11:8] -> [4:1] (& 0b1_1110)
             ((instr >> 7) & 0x1E)
+
+        // S-type immediate
+        // [31:25, 11:7], sign extended
+        let imm12_s =
+            // [31:25] -> [11:5] (& 0b1111_1110_0000)
+            signExtend((instr >> 20) & 0xFE0, 20) |
+            // [11:7] -> [4:0] (& 0b1_1111)
+            ((instr >> 7) & 0x1F)
+
+        // Shift: shamt funcs
+        let shamt = (instr >> 20) & 0x3F
+        let funct6 = funct7 >> 1
 
         let decoded: InstructionI? = switch opcode {
         // Upper Immediate Opcodes
@@ -134,6 +143,53 @@ enum InstructionI: DecodeInstruction {
             case 0b101: .lhu(rd: rd, rs1: rs1, imm12: imm12_i)
             default: nil
             }
+        // Store opcodes
+        case 0b0100011:
+            switch funct3 {
+            case 0b000: .sb(rs1: rs1, rs2: rs2, imm12: imm12_s)
+            case 0b001: .sh(rs1: rs1, rs2: rs2, imm12: imm12_s)
+            case 0b010: .sw(rs1: rs1, rs2: rs2, imm12: imm12_s)
+            default: nil
+            }
+        // Immediate Opcodes
+        case 0b0010011:
+            switch funct3 {
+            case 0b000: .addi(rd: rd, rs1: rs1, imm12: imm12_i)
+            case 0b010: .slti(rd: rd, rs1: rs1, imm12: imm12_i)
+            case 0b011: .sltiu(rd: rd, rs1: rs1, imm12: imm12_i)
+            case 0b100: .xori(rd: rd, rs1: rs1, imm12: imm12_i)
+            case 0b110: .ori(rd: rd, rs1: rs1, imm12: imm12_i)
+            case 0b111: .andi(rd: rd, rs1: rs1, imm12: imm12_i)
+            // Shift Immediate Opcodes
+            case 0b001: .slli(rd: rd, rs1: rs1, shamt: shamt)
+            case 0b101 where funct6 == 0b000000: .srli(rd: rd, rs1: rs1, shamt: shamt)
+            case 0b101 where funct6 == 0b100000: .srai(rd: rd, rs1: rs1, shamt: shamt)
+            default: nil
+            }
+        // ALU Opcodes
+        case 0b0110011:
+            switch funct3 {
+            case 0b000 where funct7 == 0b0000000: .add(rd: rd, rs1: rs1, rs2: rs2)
+            case 0b000 where funct7 == 0b0100000: .sub(rd: rd, rs1: rs1, rs2: rs2)
+            case 0b001 where funct7 == 0b0000000: .sll(rd: rd, rs1: rs1, rs2: rs2)
+            case 0b010 where funct7 == 0b0000000: .slt(rd: rd, rs1: rs1, rs2: rs2)
+            case 0b011 where funct7 == 0b0000000: .sltu(rd: rd, rs1: rs1, rs2: rs2)
+            case 0b100 where funct7 == 0b0000000: .xor(rd: rd, rs1: rs1, rs2: rs2)
+            case 0b101 where funct7 == 0b0000000: .srl(rd: rd, rs1: rs1, rs2: rs2)
+            case 0b101 where funct7 == 0b0100000: .sra(rd: rd, rs1: rs1, rs2: rs2)
+            case 0b110 where funct7 == 0b0000000: .or(rd: rd, rs1: rs1, rs2: rs2)
+            case 0b111 where funct7 == 0b0000000: .and(rd: rd, rs1: rs1, rs2: rs2)
+            default: nil
+            }
+        // FENCE
+        case 0b0001111 where rs1 == 0 && rd == 0 && funct3 == 0b000: .and(rd: rd, rs1: rs1, rs2: rs2)
+        // [31:28]
+        // let fm = (instr >> 28) & 0x7
+        // [27:24]
+        // let pred = (instr >> 24) & 0x7
+        // [23:20]
+        // let succ = (instr >> 28) & 0x7
+        //    .fence(pred: pred, succ: succ, fm: fm)
         default: nil
         }
         return decoded
