@@ -15,5 +15,8 @@ let package = Package(
                 .product(name: "ArgumentParser", package: "swift-argument-parser"),
             ]
         ),
+        .testTarget(
+          name: "RISCVTests",
+           dependencies: ["riscv-swift"]),
     ]
 )
