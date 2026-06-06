@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Run the test suite with code coverage and gate on 100% line+function coverage
+# for the RISCV library (the executable target is a 1-line trampoline, excluded).
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+# --no-parallel: coverage counters are non-atomic; parallel execution can lose
+# increments on hot functions and skew derived region counts to zero.
+swift test --enable-code-coverage --no-parallel
+
+PROF=$(swift test --show-codecov-path | xargs dirname)/default.profdata
+
+if [[ "$(uname)" == "Darwin" ]]; then
+    BUNDLE=$(find .build/debug/ -maxdepth 1 -name '*.xctest' | head -1)
+    BIN="$BUNDLE/Contents/MacOS/$(basename "$BUNDLE" .xctest)"
+    LLVM_COV=(xcrun llvm-cov)
+else
+    BIN=$(find .build/debug/ -maxdepth 1 -name '*.xctest' | head -1)
+    LLVM_COV=(llvm-cov)
+fi
+
+echo "==> Coverage report (Sources/RISCV)"
+"${LLVM_COV[@]}" report "$BIN" -instr-profile "$PROF" Sources/RISCV/*.swift | tee /tmp/riscv-coverage.txt
+
+# Gate: the TOTAL row must show 100.00% for functions (col 7) and lines (col 10).
+TOTAL=$(grep -E '^TOTAL' /tmp/riscv-coverage.txt)
+FUNC=$(echo "$TOTAL" | awk '{print $7}')
+LINES=$(echo "$TOTAL" | awk '{print $10}')
+echo "==> functions: $FUNC, lines: $LINES"
+if [[ "$FUNC" != "100.00%" || "$LINES" != "100.00%" ]]; then
+    echo "FAIL: coverage below 100%"
+    "${LLVM_COV[@]}" show "$BIN" -instr-profile "$PROF" Sources/RISCV/*.swift \
+        -region-coverage-lt=100 -line-coverage-lt=100 | head -200 || true
+    exit 1
+fi
+echo "OK: 100% line and function coverage"

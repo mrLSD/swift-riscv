@@ -1,22 +1,32 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.2
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
 
 let package = Package(
     name: "riscv-swift",
-    dependencies: [
-        .package(url: "https://github.com/apple/swift-argument-parser.git", from: "1.2.0"),
+    platforms: [
+        .macOS(.v15),
     ],
     targets: [
+        // RISC-V ISA simulator core: Swift replica of the F# reference (riscv-fs).
+        .target(
+            name: "RISCV"
+        ),
+        // Thin CLI entry point; all application logic lives (testable) in RISCV.Program.
         .executableTarget(
             name: "riscv-swift",
-            dependencies: [
-                .product(name: "ArgumentParser", package: "swift-argument-parser"),
-            ]
+            dependencies: ["RISCV"]
+        ),
+        // Performance benchmarks for every implemented ISA (see scripts/bench-ci.sh and
+        // .github/workflows/bench.yaml). Run: swift run -c release riscv-bench [--ci]
+        .executableTarget(
+            name: "riscv-bench",
+            dependencies: ["RISCV"]
         ),
         .testTarget(
-          name: "RISCVTests",
-           dependencies: ["riscv-swift"]),
+            name: "RISCVTests",
+            dependencies: ["RISCV"]
+        ),
     ]
 )

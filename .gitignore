@@ -95,3 +95,9 @@ fastlane/test_output
 
 iOSInjectionProject/
 
+
+# Local copy of the F# reference implementation (its own git repo)
+riscv-fs/
+
+# Coverage exports
+coverage.lcov
