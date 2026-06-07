@@ -1,0 +1,25 @@
+# Performance benchmarks for all implemented ISAs (I, M, A; RV32/RV64).
+# The bench step itself is hard-capped at 3 minutes (the binary also enforces
+# a 180s in-process budget in --ci mode); building is not part of the budget.
+
+name: Bench
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  bench:
+    runs-on: ubuntu-latest
+    container: swift:6.2
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+    - name: Build (release, full LTO; plain release as fallback)
+      run: swift build -c release --experimental-lto-mode=full || swift build -c release
+    - name: Run benchmarks (CI mode, <= 3 minutes)
+      timeout-minutes: 3
+      run: .build/release/riscv-bench --ci
