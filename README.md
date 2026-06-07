@@ -1,5 +1,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Swift CI](https://github.com/mrLSD/riscv-swift/actions/workflows/swift.yaml/badge.svg)](https://github.com/mrLSD/riscv-swift/actions/workflows/swift.yaml)
+[![Swift CI](https://github.com/mrLSD/swift-riscv/actions/workflows/swift.yaml/badge.svg)](https://github.com/mrLSD/swift-riscv/actions/workflows/swift.yaml)
+[![codecov](https://codecov.io/gh/mrLSD/swift-riscv/graph/badge.svg?token=7qFVK33jxC)](https://codecov.io/gh/mrLSD/swift-riscv)
 
 <center>
     <h1>mrLSD<code>/riscv-swift</code></h1>

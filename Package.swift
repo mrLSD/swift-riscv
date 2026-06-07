@@ -28,5 +28,8 @@ let package = Package(
             name: "RISCVTests",
             dependencies: ["RISCV"]
         ),
+        .testTarget(
+          name: "RISCVTests",
+           dependencies: ["riscv-swift"]),
     ]
 )
