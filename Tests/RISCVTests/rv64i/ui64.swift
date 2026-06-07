@@ -14,6 +14,7 @@ import RISCV
         let executor = try #require(Decoder.Decode(mstate, Int32(bitPattern: instr)))
         mstate = executor(mstate)
         #expect(mstate.getRegister(3) == x3)
+        #expect(mstate.PC == addr + 4)
     }
 
     @Test("LUI: x3, imm20", arguments: [

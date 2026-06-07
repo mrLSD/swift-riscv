@@ -71,6 +71,14 @@ public enum Run {
             throw ElfLoadError("Not an ELF file")
         }
 
+        // e_ident[EI_DATA]: this hand-written loader reads every multi-byte field
+        // little-endian (1 => LE). A big-endian ELF (2) would silently misparse, so
+        // reject it explicitly rather than load garbage. The reference defers this to
+        // ELFSharp, which we do not carry — consistent with the loader being LE-only.
+        guard bytes[5] == 0x01 else {
+            throw ElfLoadError("Unsupported ELF endianness (only little-endian is supported)")
+        }
+
         // e_ident[EI_CLASS]: 2 => 64-bit, anything else is handled as 32-bit
         // (mirrors the reference `CheckELFType` match).
         let is64 = bytes[4] == 2

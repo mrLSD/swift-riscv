@@ -8,7 +8,7 @@ cd "$(dirname "$0")/.."
 # increments on hot functions and skew derived region counts to zero.
 swift test --enable-code-coverage --no-parallel
 
-PROF=$(swift test --show-codecov-path | xargs dirname)/default.profdata
+PROF="$(dirname "$(swift test --show-codecov-path)")/default.profdata"
 
 if [[ "$(uname)" == "Darwin" ]]; then
     BUNDLE=$(find .build/debug/ -maxdepth 1 -name '*.xctest' | head -1)

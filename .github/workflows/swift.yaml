@@ -14,6 +14,8 @@ jobs:
     container: swift:6.2
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
     - name: Build
       run: swift build
     - name: Run tests with coverage gate

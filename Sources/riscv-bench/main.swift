@@ -216,7 +216,7 @@ for w in workloads {
     }
     let med = median(times)
     let best = times.min()!
-    totalInstructions += Double(steps * options.reps)
+    totalInstructions += Double(steps) * Double(options.reps)
     totalSeconds += times.reduce(0, +)
 
     print(

@@ -16,6 +16,8 @@ jobs:
     container: swift:6.2
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
     - name: Build (release, full LTO; plain release as fallback)
       run: swift build -c release --experimental-lto-mode=full || swift build -c release
     - name: Run benchmarks (CI mode, <= 3 minutes)

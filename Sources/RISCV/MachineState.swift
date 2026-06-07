@@ -16,7 +16,11 @@ public enum RunMachineState: Sendable, Equatable {
 
 public struct MachineState: Sendable {
     public var PC: MachineInt
-    public var Registers: [RegisterVal]
+    // Sealed setter: x0 is hardwired to 0 and every write is XLEN-normalized
+    // (`alignByArch`), invariants that a direct external `Registers[i] = …` would
+    // silently bypass. Reads stay public (observable semantics unchanged); all
+    // mutation goes through the transition methods below.
+    public private(set) var Registers: [RegisterVal]
     public var Memory: MemoryMap
     public var Verbosity: Bool
     public var Arch: Architecture

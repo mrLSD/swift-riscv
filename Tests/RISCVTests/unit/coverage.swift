@@ -4,6 +4,11 @@
 
 import Foundation
 import Testing
+#if canImport(Darwin)
+import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#endif
 @testable import RISCV
 
 struct UnitCoverageTests {
@@ -152,6 +157,15 @@ struct UnitCoverageTests {
     func truncatedHeaderThrows() throws {
         // Valid magic, but the file ends before e_entry can be read.
         try withTempFile([0x7F, 0x45, 0x4C, 0x46, 0x01, 0x01, 0x01, 0x00]) { path in
+            #expect(throws: ElfLoadError.self) { try Run.readElfFile(path) }
+        }
+    }
+
+    @Test("readElfFile rejects a big-endian ELF (only little-endian is supported)")
+    func bigEndianElfRejected() throws {
+        var be = Self.elf32
+        be[5] = 0x02 // e_ident[EI_DATA] = 2 (big-endian)
+        try withTempFile(be) { path in
             #expect(throws: ElfLoadError.self) { try Run.readElfFile(path) }
         }
     }

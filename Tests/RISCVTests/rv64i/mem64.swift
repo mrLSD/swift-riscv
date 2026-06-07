@@ -59,11 +59,11 @@ import RISCV
         let memoryRes: Int64
         switch nBytes {
         case 1: // 1 bytes
-            memoryRes = Int64(Int8(loadByte(mstate.Memory, memAddr)!))
+            memoryRes = Int64(Int8(try #require(loadByte(mstate.Memory, memAddr))))
         case 2: // 2 bytes
-            memoryRes = Int64(loadHalfWord(mstate.Memory, memAddr)!)
+            memoryRes = Int64(try #require(loadHalfWord(mstate.Memory, memAddr)))
         default: // 4 bytes
-            memoryRes = Int64(loadWord(mstate.Memory, memAddr)!)
+            memoryRes = Int64(try #require(loadWord(mstate.Memory, memAddr)))
         }
 
         #expect(mstate.getRegister(2) == x2)

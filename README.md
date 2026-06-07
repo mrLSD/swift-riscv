@@ -62,7 +62,7 @@ high-performance Swift.
 swift run -c release riscv-swift -A rv32i program.elf
 ```
 
-```
+```text
 USAGE:
      risc-v [OPTIONS] file...
 OPTIONS
