@@ -16,6 +16,14 @@
 import Foundation
 import RISCV
 
+/// Write a diagnostic to standard error. The C global `stderr` is shared mutable
+/// state that Swift 6 strict concurrency rejects on Linux/Glibc (it compiles only
+/// because Darwin imports it differently); `FileHandle.standardError` is the
+/// cross-platform, concurrency-safe path.
+func printErr(_ message: String) {
+    try? FileHandle.standardError.write(contentsOf: Data(message.utf8))
+}
+
 // ---------------------------------------------------------------------------
 // Workloads
 // ---------------------------------------------------------------------------
@@ -165,16 +173,16 @@ func parseOptions() -> Options {
             o.secondsPerRep = 0.25
             o.reps = 3
         case "--seconds":
-            guard let v = it.next(), let s = Double(v), s > 0 else { fputs("--seconds needs a positive number\n", stderr); exit(1) }
+            guard let v = it.next(), let s = Double(v), s > 0 else { printErr("--seconds needs a positive number\n"); exit(1) }
             o.secondsPerRep = s
         case "--reps":
-            guard let v = it.next(), let r = Int(v), r > 0 else { fputs("--reps needs a positive integer\n", stderr); exit(1) }
+            guard let v = it.next(), let r = Int(v), r > 0 else { printErr("--reps needs a positive integer\n"); exit(1) }
             o.reps = r
         case "--steps":
-            guard let v = it.next(), let n = Int(v), n > 0 else { fputs("--steps needs a positive integer\n", stderr); exit(1) }
+            guard let v = it.next(), let n = Int(v), n > 0 else { printErr("--steps needs a positive integer\n"); exit(1) }
             o.fixedSteps = n
         default:
-            fputs("usage: riscv-bench [--ci] [--seconds s] [--reps n] [--steps n]\n", stderr)
+            printErr("usage: riscv-bench [--ci] [--seconds s] [--reps n] [--steps n]\n")
             exit(1)
         }
     }
@@ -236,7 +244,7 @@ print(String(format: "TOTAL: %.0fM instructions in %.1fs wall (%.1f MIPS aggrega
              totalInstructions / 1e6, suiteSeconds, totalInstructions / totalSeconds / 1e6))
 
 if options.ci && suiteSeconds > options.ciBudget {
-    fputs(String(format: "FATAL: CI bench suite took %.1fs — over the %.0fs budget\n", suiteSeconds, options.ciBudget), stderr)
+    printErr(String(format: "FATAL: CI bench suite took %.1fs — over the %.0fs budget\n", suiteSeconds, options.ciBudget))
     exit(3)
 }
 
